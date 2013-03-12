@@ -1,0 +1,75 @@
+<%@page buffer="none" session="true" language="java" trimDirectiveWhitespaces="true" contentType="application/json; charset=UTF-8" pageEncoding="UTF-8" %>
+<jsp:useBean id="actionbean" class="org.opencms.jsp.CmsJspActionElement">
+<% 
+  actionbean.init(pageContext, request, response);
+  actionbean.setContentType("application/json");
+%>
+</jsp:useBean>
+<%
+  com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean)java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+  java.lang.management.OperatingSystemMXBean osBean = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+  java.lang.management.ThreadMXBean threadBean = java.lang.management.ManagementFactory.getThreadMXBean();
+  java.lang.management.ClassLoadingMXBean classesBean = java.lang.management.ManagementFactory.getClassLoadingMXBean();
+  java.lang.management.GarbageCollectorMXBean gcBean = java.lang.management.ManagementFactory.getGarbageCollectorMXBean();
+  java.lang.management.RuntimeMXBean runtimeBean = java.lang.management.ManagementFactory.getRuntimeMXBean();
+%>
+{ 
+  "system" : {
+    "os"  : "<%=osBean.getName()%>",
+    "cpu" : {
+      "number" : <%=osBean.getAvailableProcessors()%>,
+      "usage"  : <%=100*osBean.getSystemLoadAverage()%>
+    },
+    "gc" : {
+      "collection-count" : <%=gcBean.getCollectionCount()%>,
+      "collection-time"  : <%=gcBean.getCollectionTime()%>
+    },
+    "jvm" : {
+      "uptime" : <%=runtimeBean.getUptime()%>,
+      "start-time" : <%=runtimeBean.getStartTime()%>
+    },
+    "memory" : {<%
+    for(java.lang.management.MemoryPoolMXBean item : java.lang.management.ManagementFactory.getMemoryPoolMXBeans())  {
+      java.lang.management.MemoryUsage mu = item.getUsage();
+      String name = item.getName();
+      if(name.contains("Perm")) { name = "perm"; } 
+      else if(name.contains("Eden")) { name = "eden"; } 
+      else if(name.contains("Survivor")) { name = "survivor"; } 
+      else if(name.contains("Old")) { name = "old"; } 
+      else { continue; } 
+      %>
+      "<%=name%>" : {
+        "full-name" : "<%=item.getName()%>",
+        "used"      : <%=mu.getUsed()%>,
+        "committed" : <%=mu.getCommitted()%>,
+        "max"       : <%=mu.getMax()%>
+      },<%  }%>
+      "heap" : {
+        "free"  : <%= Runtime.getRuntime().freeMemory() %>,
+        "total" : <%= Runtime.getRuntime().totalMemory() %>,
+        "max"   : <%= Runtime.getRuntime().maxMemory() %>
+      },
+      "physical" : {
+        "free"  : <%=sunOsBean.getFreePhysicalMemorySize()%>,
+        "total" : <%=sunOsBean.getTotalPhysicalMemorySize()%>
+      },
+      "swap" : {
+        "free"  : <%=sunOsBean.getFreeSwapSpaceSize()%>,
+        "total" : <%=sunOsBean.getTotalSwapSpaceSize()%>
+      }
+    },
+    "classes" : {
+      "total-loaded" : <%=classesBean.getTotalLoadedClassCount()%>,
+      "loaded"       : <%=classesBean.getLoadedClassCount()%>,
+      "unloaded"     : <%=classesBean.getUnloadedClassCount()%>
+    },
+    "threads" : {
+      "counts" : {
+        "total"         : <%=threadBean.getThreadCount()%>,
+        "total-started" : <%=threadBean.getTotalStartedThreadCount()%>,
+        "peak"          : <%=threadBean.getPeakThreadCount()%>,
+        "daemon"        : <%=threadBean.getDaemonThreadCount()%>
+      }
+    }
+  }
+}
